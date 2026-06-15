@@ -3,8 +3,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.136-green)
 ![Python](https://img.shields.io/badge/Python-3.14-blue)
 
-
-A REST API for managing flashcards and categories, built with FastAPI and Python. 
+A REST API for managing flashcards and learning sessions, built with FastAPI and Python.
 
 ## 🚀 Getting Started
 
@@ -21,7 +20,6 @@ fastapi dev main.py
 
 Then visit **http://127.0.0.1:8000/docs** for the interactive API documentation.
 
-
 ## 🔖 Endpoints
 
 | Method | Endpoint | Description |
@@ -34,9 +32,21 @@ Then visit **http://127.0.0.1:8000/docs** for the interactive API documentation.
 | PATCH | /flashcards/{id} | Update a flashcard |
 | DELETE | /flashcards/{id} | Delete a flashcard |
 | DELETE | /flashcards/category/{name} | Delete a category |
+| POST | /sessions | Create a new session |
+| GET | /sessions/{id} | Get a session |
+| PATCH | /sessions/{id} | Start a session |
+| PATCH | /sessions/{id}/cards/{card_id} | Answer a flashcard |
+| GET | /sessions/{id}/cards | Get all cards of a session |
+| DELETE | /sessions/{id} | Delete a session |
 
-## 🔮 Planned Features (V2)
-- Database integration with SQLite
-- User authentication 
-- Customizable learning sessions 
-- Score tracking and leaderboard
+## ✅ Features
+- Flashcard management (CRUD)
+- Category management
+- Learning sessions with random card selection
+- Answer tracking with automatic repeat of incorrect cards
+
+## 🔮 Planned (V3)
+- Database integration 
+- User authentication
+- Global card performance tracking
+- Web UI
