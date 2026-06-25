@@ -1,18 +1,30 @@
 import random
 
 from fastapi import APIRouter, HTTPException
-from models import SessionInput, Session, SessionStatus
-from database import sessions, flashcards
+from models.session import SessionInput, SessionCreate
+from database import flashcard_db
+from database import session_db
 
 router = APIRouter()
 
 
-@router.post("/sessions")
+@router.post("/sessions", status_code=201)
 async def create_session(session: SessionInput):
-    new_session = Session(
+    all_categories = [c["category"] for c in flashcard_db.select_all_categories()]
+    for category in session.categories:
+        if category not in all_categories:
+            raise HTTPException(
+                status_code=404, detail=f'Category "{category}" not found.'
+            )
+
+    new_session = SessionCreate(
         number_of_cards=session.number_of_cards, categories=session.categories
     )
-    sessions.append(new_session)
+
+    session_db.insert_session(
+        new_session.id, new_session.number_of_cards, new_session.categories
+    )
+
     return {"message": "Session successfully created.", "session": new_session}
 
 
@@ -23,73 +35,110 @@ async def get_session(session_id: str):
 
 @router.patch("/sessions/{session_id}")
 async def start_session(session_id: str):
+
     session = _find_session(session_id)
-    if session.status == SessionStatus.CREATED:
 
-        session.status = SessionStatus.ACTIVE
-        filtered_cards = [
-            card for card in flashcards if card.category in session.categories
-        ]
+    if session["status"] == "created":
+        filtered_cards = []
+        categories = session_db.select_session_categories(session_id)
 
-        session.cards = random.sample(
-            filtered_cards, min(len(filtered_cards), session.number_of_cards)
+        for category in categories:
+            cards = flashcard_db.select_card_by_category(category["category_name"])
+            filtered_cards.extend(cards)
+
+        selected_cards = random.sample(
+            filtered_cards, min(len(filtered_cards), session["number_of_cards"])
         )
+        for card in selected_cards:
+            session_db.insert_session_cards(session_id, card["id"])
 
-        return {"message": "Session successfully started.", "session": session}
+        session_db.update_status(session_id, "active")
+        session_db.update_number_of_cards(session_id, len(selected_cards))
+
+        updated_session = session_db.select_session_by_id(session_id)
+
+        return {
+            "message": f'Session with id "{session_id}" successfully started.',
+            "session": updated_session,
+        }
     else:
         raise HTTPException(
             status_code=400, detail=f'Session with id: "{session_id}" not created.'
         )
 
 
-@router.delete("/sessions/{session_id}")
+@router.patch("/sessions/{session_id}/finish")
 async def end_session(session_id: str):
-    session = _find_session(session_id)
-    sessions.remove(session)
+    _find_session(session_id)
+    session_db.update_status(session_id, "finished")
     return {
-        "message": f'Session with id "{session_id}" sucessfully deleted',
+        "message": f'Session with id "{session_id}" successfully finished.',
+    }
+
+
+@router.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    session = _find_session(session_id)
+    session_db.delete_session(session_id)
+    return {
+        "message": f'Session with id "{session_id}" successfully deleted',
         "session": session,
     }
 
 
 @router.get("/sessions/{session_id}/cards")
 async def get_cards_of_session(session_id: str):
-    session = _find_session(session_id)
-    return session.cards
+    _find_session(session_id)
+    cards = session_db.select_session_cards(session_id)
+    if not cards:
+        return {
+            "message": f'No cards added to session with id "{session_id}"',
+        }
+    return cards
 
 
 @router.patch("/sessions/{session_id}/cards/{card_id}")
 async def user_answer(session_id: str, card_id: str, correct_answer: bool):
+
     session = _find_session(session_id)
-    for card in session.cards:
-        if card.id == card_id:
-            if correct_answer:
-                session.correct_cards.append(card)
-            else:
-                session.incorrect_cards.append(card)
-            session.cards.remove(card)
+    session_card = session_db.select_session_card(session_id, card_id)
 
-            if not session.cards and session.incorrect_cards:
-                session.cards = session.incorrect_cards
-                session.incorrect_cards = []
+    if not session_card:
+        raise HTTPException(
+            status_code=404, detail=f'Card with id "{card_id}" not found in session.'
+        )
+    # Update card answer
+    if correct_answer:
+        session_db.update_session_card_answer(session_id, card_id, "correct")
+    else:
+        session_db.update_session_card_answer(session_id, card_id, "incorrect")
 
-            answered_cards = len(session.correct_cards) + len(session.incorrect_cards)
-            total_num_cards = answered_cards + len(session.cards)
-            if not session.cards:
-                return {
-                    "message": f"Congratulations, you finished a session with {total_num_cards} flashcards."
-                }
-            return {"message": f"You answered {answered_cards}/{total_num_cards}"}
-
-    raise HTTPException(
-        status_code=404, detail=f'Flashcard with id "{card_id}" not found.'
+    unanswered_cards = session_db.select_session_cards_by_answer(
+        session_id, "unanswered"
     )
+    incorrect_cards = session_db.select_session_cards_by_answer(session_id, "incorrect")
+
+    if incorrect_cards and not unanswered_cards:
+        for card in incorrect_cards:
+            session_db.update_session_card_answer(session_id, card["id"], "unanswered")
+        return {"message": "Round complete! Incorrect cards will be repeated."}
+
+    total_cards = session["number_of_cards"]
+    correct_cards = session_db.select_session_cards_by_answer(session_id, "correct")
+    answered_cards = len(correct_cards)
+
+    if not unanswered_cards and not incorrect_cards:
+        return {
+            "message": f"Congratulations you finished a session with {total_cards} cards."
+        }
+
+    return {"message": f"You got {answered_cards}/{total_cards} cards correctly."}
 
 
 def _find_session(session_id: str):
-    for session in sessions:
-        if session.id == session_id:
-            return session
-    raise HTTPException(
-        status_code=404, detail=f'Session with id "{session_id}" not found.'
-    )
+    session = session_db.select_session_by_id(session_id)
+    if not session:
+        raise HTTPException(
+            status_code=404, detail=f'Session with id "{session_id}" not found.'
+        )
+    return session
