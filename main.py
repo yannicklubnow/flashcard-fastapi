@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from routers.flashcard import router as flashcard_router
-from routers.session import router as session_router
+from routers.flashcard_router import router as flashcard_router
+from routers.session_router import router as session_router
 
 app = FastAPI()
 

@@ -1,7 +1,7 @@
-from database.connection import connection, cursor
+import sqlite3
 
 
-def insert_card(card_id: str, category: str, question: str, answer: str, hint: str):
+def insert_card(card_id: str, category: str, question: str, answer: str, hint: str, cursor: sqlite3.Cursor, connection: sqlite3.Connection):
     '''Inserts a flashcard into the database.'''
     cursor.execute(
         '''
@@ -15,16 +15,18 @@ def insert_card(card_id: str, category: str, question: str, answer: str, hint: s
     connection.commit()
 
 
-def select_all_cards():
+def select_all_cards(cursor: sqlite3.Cursor):
     '''Returns all flashcards.'''
-    cursor.execute('''
+    cursor.execute(
+    '''
     SELECT * 
     FROM flashcards
-    ''')
+    '''
+    )
     return cursor.fetchall()
 
 
-def select_card_by_id(card_id: str):
+def select_card_by_id(card_id: str, cursor: sqlite3.Cursor):
     '''Returns a flashcard by id.'''
     cursor.execute(
         '''
@@ -37,7 +39,7 @@ def select_card_by_id(card_id: str):
     return cursor.fetchone()
 
 
-def select_card_by_category(category: str):
+def select_card_by_category(category: str, cursor: sqlite3.Cursor):
     '''Returns all flashcards of a given category.'''
     cursor.execute(
         '''
@@ -50,7 +52,7 @@ def select_card_by_category(category: str):
     return cursor.fetchall()
 
 
-def delete_card(card_id: str):
+def delete_card(card_id: str, cursor: sqlite3.Cursor, connection: sqlite3.Connection):
     '''Deletes a flashcard.'''
     cursor.execute(
         '''
@@ -63,7 +65,7 @@ def delete_card(card_id: str):
     connection.commit()
 
 
-def update_card(category: str, question: str, answer: str, hint: str, card_id: str):
+def update_card(category: str, question: str, answer: str, hint: str, card_id: str, cursor: sqlite3.Cursor, connection: sqlite3.Connection):
     '''Updates a flashcard by id.'''
     cursor.execute(
         '''
@@ -85,16 +87,18 @@ def update_card(category: str, question: str, answer: str, hint: str, card_id: s
     connection.commit()
 
 
-def select_all_categories():
+def select_all_categories(cursor: sqlite3.Cursor):
     '''Returns all categories.'''
-    cursor.execute('''
+    cursor.execute(
+    '''
     SELECT DISTINCT category 
     FROM flashcards
-    ''')
+    '''
+    )
     return cursor.fetchall()
 
 
-def delete_category(category: str):
+def delete_category(category: str, cursor: sqlite3.Cursor, connection: sqlite3.Connection):
     '''Deletes a specific category.'''
     cursor.execute(
         '''

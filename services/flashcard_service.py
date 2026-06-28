@@ -1,12 +1,13 @@
+import sqlite3
+
 from database import flashcard_db
-from fastapi import APIRouter, HTTPException
+from fastapi import HTTPException
 from models.flashcard import FlashcardUpdate, FlashcardInput, FlashcardCreate
 
-router = APIRouter()
 
-
-@router.post("/flashcards", status_code=201)
-async def add_card(card: FlashcardInput):
+def create_card(
+    card: FlashcardInput, cursor: sqlite3.Cursor, connection: sqlite3.Connection
+):
     new_card = FlashcardCreate(
         category=card.category,
         question=card.question,
@@ -20,21 +21,21 @@ async def add_card(card: FlashcardInput):
         new_card.question,
         new_card.answer,
         new_card.hint,
+        cursor,
+        connection,
     )
     return {"message": f'Flashcard with id "{new_card.id}" added successfully.'}
 
 
-@router.get("/flashcards/category")
-async def get_all_categories():
-    categories = flashcard_db.select_all_categories()
+def get_all_categories_or_404(cursor: sqlite3.Cursor):
+    categories = flashcard_db.select_all_categories(cursor)
     if not categories:
-        return {"message": "No categories found."}
+        raise HTTPException(status_code=404, detail="No categories found.")
     return categories
 
 
-@router.get("/flashcards/{card_id}")
-async def get_card_by_id(card_id: str): 
-    card = flashcard_db.select_card_by_id(card_id)
+def get_card_by_id_or_404(card_id: str, cursor: sqlite3.Cursor):
+    card = flashcard_db.select_card_by_id(card_id, cursor)
     if not card:
         raise HTTPException(
             status_code=404, detail=f'Flashcard with id "{card_id}" not found.'
@@ -42,26 +43,29 @@ async def get_card_by_id(card_id: str):
     return card
 
 
-@router.get("/flashcards/category/{category_name}")
-async def get_cards_by_category(category_name: str):
-    cards = flashcard_db.select_card_by_category(category_name)
+def get_cards_by_category_or_404(category_name: str, cursor: sqlite3.Cursor):
+    cards = flashcard_db.select_card_by_category(category_name, cursor)
     if not cards:
         raise HTTPException(
             status_code=404, detail=f'Category "{category_name}" not found.'
         )
     return cards
 
-@router.get("/flashcards")
-async def get_all_cards():
-    cards = flashcard_db.select_all_cards()
+
+def get_all_cards_or_404(cursor: sqlite3.Cursor):
+    cards = flashcard_db.select_all_cards(cursor)
     if not cards:
-        raise HTTPException(status_code=404, detail=f"No flashcards found.")
+        raise HTTPException(status_code=404, detail="No flashcards found.")
     return cards
 
 
-@router.patch("/flashcards/{card_id}")
-async def edit_card(card_id: str, flashcard: FlashcardUpdate):
-    card = flashcard_db.select_card_by_id(card_id)
+def edit_card(
+    card_id: str,
+    flashcard: FlashcardUpdate,
+    cursor: sqlite3.Cursor,
+    connection: sqlite3.Connection,
+):
+    card = flashcard_db.select_card_by_id(card_id, cursor)
 
     if not card:
         raise HTTPException(
@@ -73,6 +77,8 @@ async def edit_card(card_id: str, flashcard: FlashcardUpdate):
         flashcard.answer,
         flashcard.hint,
         card_id,
+        cursor,
+        connection,
     )
     return {
         "message": f'Flashcard with id "{card_id}" successfully updated.',
@@ -80,25 +86,24 @@ async def edit_card(card_id: str, flashcard: FlashcardUpdate):
     }
 
 
-@router.delete("/flashcards/{card_id}")
-async def delete_card(card_id: str):
-    card = flashcard_db.select_card_by_id(card_id)
+def delete_card(card_id: str, cursor: sqlite3.Cursor, connection: sqlite3.Connection):
+    card = flashcard_db.select_card_by_id(card_id, cursor)
     if not card:
         raise HTTPException(
             status_code=404, detail=f'Flashcard with id "{card_id}" not found.'
         )
-    flashcard_db.delete_card(card_id)
+    flashcard_db.delete_card(card_id, cursor, connection)
     return {"message": f"Flashcard with id {card_id} successfully deleted."}
 
 
-
-@router.delete("/flashcards/category/{category_name}")
-async def delete_category(category_name: str):
-    cards = flashcard_db.select_card_by_category(category_name)
+def delete_category(
+    category_name: str, cursor: sqlite3.Cursor, connection: sqlite3.Connection
+):
+    cards = flashcard_db.select_card_by_category(category_name, cursor)
     if not cards:
         raise HTTPException(
             status_code=404,
             detail=f'Flashcard with category "{category_name}" not found.',
         )
-    flashcard_db.delete_category(category_name)
+    flashcard_db.delete_category(category_name, cursor, connection)
     return {"message": f'Category "{category_name}" successfully deleted.'}

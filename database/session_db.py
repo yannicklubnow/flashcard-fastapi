@@ -1,7 +1,7 @@
-from database.connection import connection, cursor
+import sqlite3
 
 
-def insert_session(session_id: str, number_of_cards: int, categories: list[str]):
+def insert_session(session_id: str, number_of_cards: int, categories: list[str], cursor: sqlite3.Cursor, connection: sqlite3.Connection):
     """Inserts a session into the database."""
     cursor.execute(
     '''
@@ -23,7 +23,7 @@ def insert_session(session_id: str, number_of_cards: int, categories: list[str])
     connection.commit()
 
 
-def insert_session_cards(session_id: str, card_id: str):
+def insert_session_cards(session_id: str, card_id: str, cursor: sqlite3.Cursor, connection: sqlite3.Connection):
     """Inserts a flashcard to a session."""
     cursor.execute(
     '''
@@ -36,7 +36,7 @@ def insert_session_cards(session_id: str, card_id: str):
     connection.commit()
 
 
-def select_session_by_id(session_id: str):
+def select_session_by_id(session_id: str, cursor: sqlite3.Cursor):
     """Returns a session by id."""
     cursor.execute(
     '''
@@ -49,7 +49,7 @@ def select_session_by_id(session_id: str):
     return cursor.fetchone()
     
 
-def update_status(session_id: str, status: str):
+def update_status(session_id: str, status: str, cursor: sqlite3.Cursor, connection: sqlite3.Connection):
     """Updates the sessions status."""
     cursor.execute(
     '''
@@ -61,7 +61,7 @@ def update_status(session_id: str, status: str):
     )
     connection.commit()
 
-def update_number_of_cards(session_id: str, number_of_cards: int):
+def update_number_of_cards(session_id: str, number_of_cards: int, cursor: sqlite3.Cursor, connection: sqlite3.Connection):
     """Updates the sessions number of selected cards."""
     cursor.execute(
     '''
@@ -73,7 +73,7 @@ def update_number_of_cards(session_id: str, number_of_cards: int):
     )
     connection.commit()
 
-def select_session_cards(session_id: str):
+def select_session_cards(session_id: str, cursor: sqlite3.Cursor):
     """Returns all cards from a session."""
     cursor.execute(
     '''
@@ -86,7 +86,7 @@ def select_session_cards(session_id: str):
     return cursor.fetchall()
 
 
-def select_session_cards_by_answer(session_id: str, user_answer: str):
+def select_session_cards_by_answer(session_id: str, user_answer: str, cursor: sqlite3.Cursor):
     """Returns cards by answers from a session."""
     cursor.execute(
     '''
@@ -100,7 +100,7 @@ def select_session_cards_by_answer(session_id: str, user_answer: str):
     return cursor.fetchall()
 
 
-def select_session_card(session_id: str, card_id: str):
+def select_session_card(session_id: str, card_id: str, cursor: sqlite3.Cursor):
     """Returns a card from a session."""
     cursor.execute(
     '''
@@ -114,7 +114,7 @@ def select_session_card(session_id: str, card_id: str):
     return cursor.fetchone()
 
 
-def select_session_categories(session_id: str):
+def select_session_categories(session_id: str, cursor: sqlite3.Cursor):
     """Returns all categories from a session."""
     cursor.execute(
     '''
@@ -126,7 +126,7 @@ def select_session_categories(session_id: str):
     return cursor.fetchall()
 
 
-def delete_session(session_id: str):
+def delete_session(session_id: str, cursor: sqlite3.Cursor, connection: sqlite3.Connection):
     """Deletes a session."""
     cursor.execute(
     '''
@@ -139,7 +139,7 @@ def delete_session(session_id: str):
     connection.commit()
 
 
-def update_session_card_answer(session_id: str, card_id: str, user_answer: str):
+def update_session_card_answer(session_id: str, card_id: str, user_answer: str, cursor: sqlite3.Cursor, connection: sqlite3.Connection):
     """Updates a card in a session from unanswered to correct or incorrect."""
     cursor.execute(
     '''
