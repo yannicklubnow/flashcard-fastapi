@@ -12,10 +12,6 @@ A REST API for managing flashcards and learning sessions, built with FastAPI, Py
 
 ```bash
 git clone https://github.com/yannicklubnow/flashcard-fastapi.git
-cd flashcard-fastapi
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
 python database/connection.py
 fastapi dev main.py
 ```
