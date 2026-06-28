@@ -22,7 +22,17 @@ fastapi dev main.py
 
 Then visit **http://127.0.0.1:8000/docs** for the interactive API documentation.
 
+## 🏗️ Architecture
+
+The project follows a three-layer architecture:
+
+- **Router** – HTTP request handling
+- **Service** – Business logic
+- **Database** – SQL queries via SQLite
+
 ## 🔖 Endpoints
+
+### Flashcards
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -34,10 +44,16 @@ Then visit **http://127.0.0.1:8000/docs** for the interactive API documentation.
 | PATCH | /flashcards/{id} | Update a flashcard |
 | DELETE | /flashcards/{id} | Delete a flashcard |
 | DELETE | /flashcards/category/{name} | Delete a category |
+
+### Sessions
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | POST | /sessions | Create a new session |
 | GET | /sessions/{id} | Get a session |
 | PATCH | /sessions/{id} | Start a session |
 | PATCH | /sessions/{id}/finish | Finish a session |
+| POST | /sessions/{id}/cards | Add a card to a session |
 | PATCH | /sessions/{id}/cards/{card_id} | Answer a flashcard |
 | GET | /sessions/{id}/cards | Get all cards of a session |
 | DELETE | /sessions/{id} | Delete a session |
@@ -45,12 +61,13 @@ Then visit **http://127.0.0.1:8000/docs** for the interactive API documentation.
 ## ✅ Features
 - Flashcard management (CRUD)
 - Category management
-- SQLite database integration
+- SQLite database integration with Foreign Keys
+- Dependency Injection for database connections
+- Three-layer architecture (Router, Service, Database)
 - Learning sessions with random card selection
 - Answer tracking with automatic repeat of incorrect cards
 
 ## 🔮 Planned (V4)
-- Dependency Injection for database connections
 - User authentication
 - Global card performance tracking
-- Web UI 
+- Web UI
